@@ -1,10 +1,15 @@
 import csv
+import gspread 
+from google.oauth2 import service_account
+from oauth2client.service_account import ServiceAccountCredentials
 import time
 from selenium import webdriver
 from selenium.common import NoSuchElementException
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from webdriver_manager.chrome import ChromeDriverManager
+from df2gspread import df2gspread as d2g
+
 
 
 class GoogleMapScraper:
@@ -29,7 +34,6 @@ class GoogleMapScraper:
             if data[0] == 1:
                 writer.writerow(header)
             writer.writerow(data)
-
 
     def parse_contact(self, business):
         try:
@@ -124,3 +128,15 @@ business_scraper = GoogleMapScraper()
 business_scraper.config_driver()
 for url in urls:
     business_scraper.load_companies(url)
+
+scope = ["https://spreadsheets.google.com/feeds", 'https://www.googleapis.com/auth/spreadsheets',
+         "https://www.googleapis.com/auth/drive.file", "https://www.googleapis.com/auth/drive"]
+
+credentials = ServiceAccountCredentials.from_json_keyfile_name('adrive.json', scope)
+client = gspread.authorize(credentials)
+
+spreadsheet = client.open('scrapped data')
+
+with open('google_map_business_data.csv', 'r') as file_obj:
+    content = file_obj.read()
+    client.import_csv(spreadsheet.id, data=content)
